@@ -216,24 +216,21 @@ main{min-width:0;display:flex;flex-direction:column}
 <section id="login" class="hide">
   <div class="l-brand">
     <div>
-      <div class="logo">VH</div>
-      <h1>Hệ thống giao nhiệm vụ & kiểm soát thực hiện công việc</h1>
-      <p>Phòng Văn hóa - Xã hội. Giao việc theo Phân công nhiệm vụ lãnh đạo, công chức (VTVL). Theo dõi tiến độ, phê duyệt, đánh giá hiệu suất từng cá nhân.</p>
+      <div class="logo" id="lLogo">VH</div>
+      <h1 id="lTitle"></h1>
+      <p id="lDesc"></p>
     </div>
-    <div class="l-feat">
-      <div>📋 Giao việc theo lĩnh vực</div><div>⏱ Cảnh báo quá hạn tự động</div>
-      <div>✅ Duyệt &amp; chấm điểm kết quả</div><div>📊 Dashboard &amp; xếp loại KPI</div>
-    </div>
+<div class="l-feat" id="lFeat"></div>
   </div>
   <div class="l-form">
     <form class="l-box" id="loginForm" autocomplete="off">
       <h2>Đăng nhập</h2>
-      <p style="color:var(--muted);margin:0 0 18px">Tên đăng nhập là tên nhân viên (vd: <b>Nho</b>, <b>Hòa</b>, <b>Tâm</b>). Mật khẩu mặc định: <b>112233</b></p>
+<div style="height:14px"></div>
       <div class="field"><label class="f">Tên đăng nhập</label><input type="text" id="lu" placeholder="Nhập tên của bạn" autofocus></div>
       <div class="field"><label class="f">Mật khẩu</label><input type="password" id="lp" placeholder="••••••"></div>
       <div class="err" id="lerr"></div>
       <button class="btn pri" style="width:100%;justify-content:center;padding:11px" type="submit">Đăng nhập</button>
-      <details class="demo"><summary>Danh sách tài khoản</summary><div class="chips" id="demoChips"></div></details>
+      <details class="demo" id="demoBox"><summary>Danh sách tài khoản</summary><div class="chips" id="demoChips"></div></details>
     </form>
   </div>
 </section>
@@ -241,7 +238,7 @@ main{min-width:0;display:flex;flex-direction:column}
 <!-- APP -->
 <div id="app" class="hide">
   <aside id="side">
-    <div class="brand"><div class="logo">VH</div><div><b>Phòng Văn hóa - Xã hội</b><small>Quản lý nhiệm vụ</small></div></div>
+    <div class="brand"><div class="logo" id="sLogo">VH</div><div><b id="sOrg"></b><small id="sApp"></small></div></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
       <div class="me" id="meBox"></div>
@@ -307,7 +304,7 @@ const DEFAULT_PW="112233";
 const STATUS={new:{l:"Mới giao",c:"var(--new)"},doing:{l:"Đang thực hiện",c:"var(--doing)"},review:{l:"Chờ duyệt",c:"var(--review)"},done:{l:"Hoàn thành",c:"var(--done)"},paused:{l:"Tạm hoãn",c:"var(--paused)"},cancelled:{l:"Đã hủy",c:"var(--paused)"},overdue:{l:"Quá hạn",c:"var(--over)"}};
 const PRIO={urgent:{l:"Khẩn",c:"var(--p-urgent)",n:0},high:{l:"Cao",c:"var(--p-high)",n:1},mid:{l:"Trung bình",c:"var(--p-mid)",n:2},low:{l:"Thấp",c:"var(--p-low)",n:3}};
 const WEIGHT={1:"Thường",2:"Quan trọng",3:"Rất quan trọng"};
-const ROLE={head:"Trưởng phòng",deputy:"Phó Trưởng phòng",staff:"Công chức"};
+const ROLE={admin:"Quản trị viên",head:"Trưởng phòng",deputy:"Phó Trưởng phòng",staff:"Công chức"};
 const AVC=["#0f4c81","#0e8a7d","#b45309","#7c3aed","#be185d","#15803d","#c2410c","#4338ca","#0369a1","#a21caf","#4d7c0f","#b91c1c"];
 
 const USERS_SEED=[
@@ -404,20 +401,28 @@ function seedDB(){
   // overdue examples were set above through due dates; add sample notifications and logs
   notes.push({id:uid(),to:"u_nho",text:"Hồng Tâm đã nộp báo cáo: Kế hoạch bồi dưỡng cán bộ, công chức 2027",at:off(-3)+" 10:20",read:false,taskId:tasks.find(t=>t.code==="NV-0011").id});
   logs.push({at:nowStr(),uid:"u_nho",text:"Khởi tạo hệ thống với dữ liệu mẫu"});
-  return {v:1,users,tasks,notes,logs,theme:null};
+  return {v:1,users,tasks,notes,logs,theme:null,settings:null};
 }
 
 /* ============ STORE ============ */
 const KEY="pvhx_taskapp_v1", SKEY="pvhx_session_v1";
 let DB; try{DB=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){DB=null}
 if(!DB||!DB.users) DB=seedDB();
+const DEF_SET={orgName:"Phòng Văn hóa - Xã hội",appName:"Quản lý nhiệm vụ",logo:"VH",loginTitle:"Hệ thống giao nhiệm vụ & kiểm soát thực hiện công việc",
+ loginDesc:"Giao việc theo phân công nhiệm vụ, theo dõi tiến độ, phê duyệt và đánh giá hiệu suất từng cá nhân.",
+ feats:["📋 Giao việc theo lĩnh vực","⏱ Cảnh báo quá hạn tự động","✅ Duyệt & chấm điểm kết quả","📊 Dashboard & xếp loại KPI"],showAccounts:true};
+DB.settings=Object.assign({},DEF_SET,DB.settings||{});
+if(!DB.users.some(u=>u.role==="admin"))DB.users.unshift({id:"u_admin",name:"Quản trị hệ thống",username:"admin",role:"admin",title:"Quản trị viên",mandate:"Quản trị toàn bộ nội dung và dữ liệu hệ thống.",duties:[],pass:hash("admin"),active:true,phone:"",email:""});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}};
 save();
 const S={me:null,route:"dashboard",period:"quarter",view:"list",fStatus:"",fPrio:"",fUser:"",q:"",calMonth:today().slice(0,7),teamView:"cards",perfUser:null,dropOpen:false,logQ:""};
 const U=id=>DB.users.find(u=>u.id===id);
 const T=id=>DB.tasks.find(t=>t.id===id);
 const isLead=u=>u&&(u.role==="head"||u.role==="deputy");
-const isHead=u=>u&&u.role==="head";
+const isHead=u=>u&&(u.role==="head"||u.role==="admin");
+const isAdmin=u=>u&&u.role==="admin";
+const members=()=>DB.users.filter(u=>u.role!=="admin"&&u.active);
+const heads=()=>DB.users.filter(u=>u.role==="head").map(u=>u.id);
 const log=text=>{DB.logs.unshift({at:nowStr(),uid:S.me?.id||"",text});DB.logs=DB.logs.slice(0,400)};
 const notify=(to,text,taskId)=>{[].concat(to).filter(x=>x&&x!==S.me?.id).forEach(id=>DB.notes.unshift({id:uid(),to:id,text,at:nowStr(),read:false,taskId}));DB.notes=DB.notes.slice(0,500)};
 const sys=(t,text)=>t.comments.push({id:uid(),uid:S.me.id,sys:true,text,at:nowStr()});
@@ -526,7 +531,8 @@ function login(e){
 function logout(){log("Đăng xuất");save();localStorage.removeItem(SKEY);S.me=null;location.hash="";showLogin()}
 function showLogin(){
   $("#app").classList.add("hide");$("#login").classList.remove("hide");
-  $("#demoChips").innerHTML=DB.users.map(u=>`<button type="button" class="chip" data-act="fill" data-u="${esc(u.username)}">${esc(shortName(u.name))} · ${esc(u.username)}</button>`).join("");
+  $("#demoBox").classList.toggle("hide",!DB.settings.showAccounts);applySettings();
+  $("#demoChips").innerHTML=DB.users.filter(u=>u.role!=="admin").map(u=>`<button type="button" class="chip" data-act="fill" data-u="${esc(u.username)}">${esc(shortName(u.name))} · ${esc(u.username)}</button>`).join("");
   $("#lp").value="";$("#lerr").textContent="";
 }
 
@@ -535,11 +541,18 @@ const NAV=()=>{
   const lead=isLead(S.me);
   const items=[["dashboard","dash","Tổng quan"],["tasks","tasks",lead?"Quản lý nhiệm vụ":"Việc của tôi"],["calendar","cal","Lịch công việc"],["team","team",lead?"Nhân sự & phân công":"Phân công nhiệm vụ"]];
   if(lead)items.push(["performance","perf","Đánh giá hiệu suất"],["activity","log","Nhật ký hoạt động"]);
+  if(isAdmin(S.me))items.push(["admin","org","Quản trị nội dung"]);
   items.push(["settings","set","Tài khoản & hệ thống"]);
   return items;
 };
-const TITLES={dashboard:"Tổng quan",tasks:"Nhiệm vụ",calendar:"Lịch công việc",team:"Nhân sự & phân công nhiệm vụ",performance:"Đánh giá hiệu suất",activity:"Nhật ký hoạt động",settings:"Tài khoản & hệ thống"};
-function renderShell(){
+const TITLES={dashboard:"Tổng quan",tasks:"Nhiệm vụ",calendar:"Lịch công việc",team:"Nhân sự & phân công nhiệm vụ",performance:"Đánh giá hiệu suất",activity:"Nhật ký hoạt động",admin:"Quản trị nội dung",settings:"Tài khoản & hệ thống"};
+function applySettings(){
+  const c=DB.settings;document.title=c.appName+" – "+c.orgName;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set("sOrg",c.orgName);set("sApp",c.appName);set("sLogo",c.logo);set("lLogo",c.logo);set("lTitle",c.loginTitle);set("lDesc",c.loginDesc);
+  const f=document.getElementById("lFeat");if(f)f.innerHTML=c.feats.filter(Boolean).map(x=>`<div>${esc(x)}</div>`).join("");
+}
+function renderShell(){applySettings();
   const pendingReview=isLead(S.me)?scope().filter(t=>t.status==="review"&&canManage(t)).length:0;
   const mineOver=DB.tasks.filter(t=>isOverdue(t)&&(isLead(S.me)||isMine(t))).length;
   $("#nav").innerHTML=NAV().map(([r,ic,l])=>`<a data-act="go" data-r="${r}" class="${S.route===r?"on":""}">${icon(ic)}${l}${r==="tasks"&&(pendingReview||mineOver)?`<span class="cnt">${pendingReview||mineOver}</span>`:""}</a>`).join("");
@@ -553,7 +566,7 @@ function render(){
   if(!S.me)return;
   if(!NAV().some(n=>n[0]===S.route))S.route="dashboard";
   renderShell();
-  const pg={dashboard:pgDashboard,tasks:pgTasks,calendar:pgCalendar,team:pgTeam,performance:pgPerf,activity:pgActivity,settings:pgSettings}[S.route];
+  const pg={dashboard:pgDashboard,tasks:pgTasks,calendar:pgCalendar,team:pgTeam,performance:pgPerf,activity:pgActivity,admin:pgAdmin,settings:pgSettings}[S.route];
   $("#page").innerHTML=pg();
   if(S.route==="tasks")bindKanban();
 }
@@ -592,14 +605,13 @@ function pgDashboard(){
   const parts=[["done","Hoàn thành"],["review","Chờ duyệt"],["doing","Đang thực hiện"],["new","Mới giao"],["overdue","Quá hạn"],["paused","Tạm hoãn"]].map(([k,l])=>({l,v:cnt(k),c:STATUS[k].c}));
   const tr=weeklyTrend(all);
   const h=new Date().getHours(),greet=h<11?"Chào buổi sáng":h<18?"Chào buổi chiều":"Chào buổi tối";
-  const defPw=S.me.pass===hash(DEFAULT_PW);
-  let html=`${defPw?`<div class="banner">🔐 Bạn đang dùng mật khẩu mặc định (112233). <a href="#settings" data-act="go" data-r="settings" style="font-weight:700;color:inherit">Đổi mật khẩu ngay</a></div>`:""}
+  const defPw=S.me.pass===hash(DEFAULT_PW)||(isAdmin(S.me)&&S.me.pass===hash("admin"));
+  let html=`${defPw?`<div class="banner">🔐 Bạn đang dùng mật khẩu mặc định. <a href="#settings" data-act="go" data-r="settings" style="font-weight:700;color:inherit">Đổi mật khẩu ngay</a></div>`:""}
   <div class="pagehead"><div><h1>${greet}, ${esc(shortName(S.me.name))} 👋</h1><div style="color:var(--muted)">${esc(S.me.title)} · Hôm nay ${fmt(today())} · ${PERIODS[S.period]}</div></div><div class="sp"></div>${periodBar()}${lead?`<button class="btn pri" data-act="newtask">${icon("plus")}Giao nhiệm vụ</button>`:""}</div>
   ${kpiCards(ts)}`;
   const legend=`<div class="legend">${parts.map(p=>`<span><i style="background:${p.c}"></i>${p.l} (${p.v})</span>`).join("")}</div>`;
   if(lead){
-    const staff=DB.users.filter(u=>u.active&&u.id!==S.me.id||u.id===S.me.id&&false);
-    const members=DB.users.filter(u=>u.active);
+    const members=window.__m=DB.users.filter(u=>u.active&&u.role!=="admin");
     const rowsW=members.map(u=>{const m=ts.filter(t=>t.assigneeId===u.id&&t.status!=="cancelled");return {u,m}}).filter(x=>x.m.length||x.u.role==="staff").sort((a,b)=>b.m.length-a.m.length);
     const segs=["done","review","doing","new","overdue","paused"];
     const wl=rowsW.map(({u,m})=>{const mx=Math.max(...rowsW.map(x=>x.m.length),1);return `<div class="wl" data-act="userfilter" data-u="${u.id}"><div class="nm">${esc(shortName(u.name))}</div><div class="stack" style="max-width:${Math.max(8,m.length/mx*100)}%">${segs.map(k=>{const c=m.filter(t=>eff(t)===k).length;return c?`<i style="flex:${c};background:${STATUS[k].c}" title="${STATUS[k].l}: ${c}"></i>`:""}).join("")}</div><div class="tot">${m.length}</div></div>`}).join("");
@@ -650,7 +662,7 @@ function pgTasks(){
   <div class="toolbar"><input type="search" id="fq" placeholder="Tìm theo tên, mã, lĩnh vực…" value="${esc(S.q)}">
    ${sel("fs",[["","Tất cả trạng thái"],["active","Đang thực hiện/mới"],["review","Chờ duyệt"],["done","Hoàn thành"],["overdue","Quá hạn"],["paused","Tạm hoãn"],["cancelled","Đã hủy"]],S.fStatus)}
    ${sel("fp",[["","Mọi mức ưu tiên"],...Object.entries(PRIO).map(([k,v])=>[k,v.l])],S.fPrio)}
-   ${lead?sel("fu",[["","Tất cả nhân sự"],...DB.users.filter(u=>u.active).map(u=>[u.id,shortName(u.name)])],S.fUser):""}
+   ${lead?sel("fu",[["","Tất cả nhân sự"],...members().map(u=>[u.id,shortName(u.name)])],S.fUser):""}
    <span style="color:var(--muted);font-size:12.5px">${l.length} nhiệm vụ</span>${(S.fStatus||S.fPrio||S.fUser||S.q)?`<button class="btn sm ghost" data-act="clearf">Xóa lọc</button>`:""}</div>`;
   if(S.view==="kanban"){
     const cols=["new","doing","review","done"];
@@ -740,7 +752,7 @@ function submitModal(id){
   $("#rsOk").onclick=()=>{const n=$("#rn").value.trim();if(!n)return toast("Vui lòng nhập tóm tắt kết quả");
     t.status="review";t.progress=100;t.submittedAt=today();t.reportNote=n;if($("#rl").value.trim())t.link=$("#rl").value.trim();
     sys(t,"Nộp báo cáo hoàn thành – chờ phê duyệt");
-    notify([t.createdBy,"u_nho"],`${shortName(S.me.name)} đã nộp báo cáo: ${t.title}`,id);
+    notify([t.createdBy,...heads()],`${shortName(S.me.name)} đã nộp báo cáo: ${t.title}`,id);
     log(`Nộp báo cáo ${t.code}`);save();closeModal();render();toast("Đã nộp báo cáo, chờ lãnh đạo duyệt")};
 }
 function reviewModal(id){
@@ -768,14 +780,14 @@ function reworkModal(id){
 }
 function taskForm(id){
   const t=id?T(id):null,me=S.me;
-  const assignable=DB.users.filter(u=>u.active&&u.id!==me.id&&(isHead(me)||u.role==="staff"));
+  const assignable=DB.users.filter(u=>u.active&&u.role!=="admin"&&u.id!==me.id&&(isHead(me)||u.role==="staff"));
   const cur=t?.assigneeId||assignable[0]?.id;
   modal(`${mhead(t?"Sửa nhiệm vụ":"Giao nhiệm vụ mới")}<div class="m-b">
    <div class="field"><label class="f">Tên nhiệm vụ *</label><input type="text" id="tf_title" value="${esc(t?.title||"")}"></div>
    <div class="field"><label class="f">Nội dung, yêu cầu, sản phẩm đầu ra</label><textarea id="tf_desc" rows="3">${esc(t?.desc||"")}</textarea></div>
    <div class="row"><div class="field"><label class="f">Người thực hiện *</label><select id="tf_as">${assignable.map(u=>`<option value="${u.id}" ${u.id===cur?"selected":""}>${esc(shortName(u.name))} – ${esc(u.title)}</option>`).join("")}</select></div>
    <div class="field"><label class="f">Lĩnh vực (theo phân công)</label><select id="tf_field"></select></div></div>
-   <div class="field"><label class="f">Người phối hợp</label><div class="ms" id="tf_col">${DB.users.filter(u=>u.active).map(u=>`<label><input type="checkbox" value="${u.id}" ${t?.collab.includes(u.id)?"checked":""}>${esc(shortName(u.name))}</label>`).join("")}</div></div>
+   <div class="field"><label class="f">Người phối hợp</label><div class="ms" id="tf_col">${members().map(u=>`<label><input type="checkbox" value="${u.id}" ${t?.collab.includes(u.id)?"checked":""}>${esc(shortName(u.name))}</label>`).join("")}</div></div>
    <div class="row"><div class="field"><label class="f">Ngày bắt đầu</label><input type="date" id="tf_s" value="${t?.startDate||today()}"></div><div class="field"><label class="f">Hạn hoàn thành *</label><input type="date" id="tf_d" value="${t?.due||addDays(today(),7)}"></div></div>
    <div class="row"><div class="field"><label class="f">Mức ưu tiên</label><select id="tf_p">${Object.entries(PRIO).map(([k,v])=>`<option value="${k}" ${(t?.priority||"mid")===k?"selected":""}>${v.l}</option>`).join("")}</select></div>
    <div class="field"><label class="f">Mức độ / trọng số tính điểm</label><select id="tf_w">${Object.entries(WEIGHT).map(([k,v])=>`<option value="${k}" ${(t?.weight||1)==k?"selected":""}>${v} (x${k})</option>`).join("")}</select></div></div>
@@ -818,7 +830,7 @@ function pgCalendar(){
 
 /* ============ TEAM ============ */
 function pgTeam(){
-  const lead=isLead(S.me),all=DB.users.filter(u=>lead||u.active);
+  const lead=isLead(S.me),all=DB.users.filter(u=>u.role!=="admin"&&(lead||u.active));
   let h=`<div class="pagehead"><h1>${lead?"Nhân sự & phân công nhiệm vụ":"Phân công nhiệm vụ của Phòng"}</h1><div class="sp"></div>
    <div class="seg"><button class="${S.teamView==="cards"?"on":""}" data-act="tv" data-v="cards">Thẻ nhân sự</button><button class="${S.teamView==="table"?"on":""}" data-act="tv" data-v="table">Bảng phân công (VTVL)</button></div>
    ${isHead(S.me)?`<button class="btn pri" data-act="newuser">${icon("plus")}Thêm nhân sự</button>`:""}</div>`;
@@ -838,7 +850,7 @@ function userForm(id){
   modal(`${mhead(u?"Sửa thông tin nhân sự":"Thêm nhân sự mới")}<div class="m-b">
    <div class="field"><label class="f">Họ và tên *</label><input type="text" id="uf_n" value="${esc(u?.name||"")}"></div>
    <div class="row"><div class="field"><label class="f">Tên đăng nhập *</label><input type="text" id="uf_u" value="${esc(u?.username||"")}"></div>
-   <div class="field"><label class="f">Vai trò</label><select id="uf_r"><option value="staff" ${u?.role==="staff"?"selected":""}>Công chức</option><option value="deputy" ${u?.role==="deputy"?"selected":""}>Phó Trưởng phòng</option><option value="head" ${u?.role==="head"?"selected":""}>Trưởng phòng</option></select></div></div>
+   <div class="field"><label class="f">Vai trò</label><select id="uf_r"><option value="staff" ${u?.role==="staff"?"selected":""}>Công chức</option><option value="deputy" ${u?.role==="deputy"?"selected":""}>Phó Trưởng phòng</option><option value="head" ${u?.role==="head"?"selected":""}>Trưởng phòng</option>${isAdmin(S.me)?`<option value="admin" ${u?.role==="admin"?"selected":""}>Quản trị viên</option>`:""}</select></div></div>
    <div class="field"><label class="f">Chức danh hiển thị</label><input type="text" id="uf_t" value="${esc(u?.title||"Công chức")}"></div>
    <div class="field"><label class="f">Nhiệm vụ được phân công (mô tả)</label><textarea id="uf_m" rows="3">${esc(u?.mandate||"")}</textarea></div>
    <div class="field"><label class="f">Lĩnh vực phụ trách (mỗi dòng một lĩnh vực – dùng khi giao việc)</label><textarea id="uf_d" rows="4">${esc((u?.duties||[]).join("\n"))}</textarea></div>
@@ -856,7 +868,7 @@ function userForm(id){
 /* ============ PERFORMANCE ============ */
 function pgPerf(){
   const ts=DB.tasks.filter(inPeriod);
-  const rows=DB.users.filter(u=>u.active).map(u=>({u,p:perf(u.id,ts)})).sort((a,b)=>(b.p.score??-1)-(a.p.score??-1));
+  const rows=members().map(u=>({u,p:perf(u.id,ts)})).sort((a,b)=>(b.p.score??-1)-(a.p.score??-1));
   const act=rows.filter(r=>r.p.score!==null);
   const avg=act.length?Math.round(sum(act.map(r=>r.p.score))/act.length):null;
   const dist={"Hoàn thành xuất sắc":0,"Hoàn thành tốt":0,"Hoàn thành":0,"Chưa hoàn thành":0};act.forEach(r=>dist[r.p.rank]++);
@@ -876,6 +888,25 @@ function perfDetail(id){
    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:14px">${ringScore(p.score,110)}<div><span class="badge" style="--c:${rankColor(p.score)}">${p.rank}</span><div style="margin-top:8px;color:var(--muted)">Giao ${p.total} · Xong ${p.done} · Quá hạn ${p.od}<br>Hoàn thành ${pct(p.completion)} · Đúng hạn ${pct(p.onTime)} · Chất lượng ${p.avg?p.avg.toFixed(1)+"/5":"—"}</div></div></div>
    <table class="tbl"><thead><tr><th>Nhiệm vụ</th><th>Hạn</th><th>Kết quả</th><th>Đánh giá</th></tr></thead><tbody>${ts.map(t=>`<tr class="click" data-act="open" data-id="${t.id}"><td>${esc(t.title)}<div class="t-sub">${esc(t.field)}</div></td><td>${fmt(t.due)}</td><td>${badge(eff(t))}<div class="t-sub">${daysLabel(t)}</div></td><td>${stars(t.rating)}<div class="t-sub">${esc(t.fb)}</div></td></tr>`).join("")||'<tr><td colspan="4" class="empty">Chưa có nhiệm vụ</td></tr>'}</tbody></table></div>
    <div class="m-f"><button class="btn" data-act="closem">Đóng</button></div>`,true);
+}
+
+/* ============ ADMIN ============ */
+function pgAdmin(){
+  const c=DB.settings;
+  return `<div class="pagehead"><h1>Quản trị nội dung hệ thống</h1><div class="sp"></div><button class="btn" data-act="newuser">${icon("plus")}Thêm nhân sự</button></div>
+  <div class="grid g2"><div class="card"><h3>Tên đơn vị &amp; giao diện đăng nhập</h3>
+   <div class="row"><div class="field"><label class="f">Tên đơn vị (hiển thị menu)</label><input type="text" id="ad_org" value="${esc(c.orgName)}"></div><div class="field" style="max-width:110px"><label class="f">Logo (2–3 chữ)</label><input type="text" id="ad_logo" maxlength="3" value="${esc(c.logo)}"></div></div>
+   <div class="field"><label class="f">Tên ứng dụng</label><input type="text" id="ad_app" value="${esc(c.appName)}"></div>
+   <div class="field"><label class="f">Tiêu đề trang đăng nhập</label><input type="text" id="ad_lt" value="${esc(c.loginTitle)}"></div>
+   <div class="field"><label class="f">Mô tả trang đăng nhập</label><textarea id="ad_ld" rows="3">${esc(c.loginDesc)}</textarea></div>
+   <div class="field"><label class="f">4 dòng tính năng (mỗi dòng một ý, để trống để ẩn)</label><textarea id="ad_ft" rows="4">${esc(c.feats.join("\n"))}</textarea></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="ad_sa" style="width:auto" ${c.showAccounts?"checked":""}>Hiện “Danh sách tài khoản” ở trang đăng nhập</label>
+   <button class="btn pri" data-act="saveset">Lưu thay đổi</button></div>
+  <div class="card"><h3>Hướng dẫn quản trị</h3><div style="font-size:13px;line-height:1.8">• Sửa <b>họ tên, tên đăng nhập, chức vụ, nhiệm vụ phân công, lĩnh vực</b> của từng người ở bảng bên dưới.<br>• Lãnh đạo/nhân viên mới: bấm <b>Thêm nhân sự</b> (mật khẩu mặc định ${DEFAULT_PW}).<br>• Sửa/xóa mọi nhiệm vụ: vào <a data-act="go" data-r="tasks" style="cursor:pointer;color:var(--brand);font-weight:700">Quản lý nhiệm vụ</a>.<br>• Người đã có nhiệm vụ không xóa được – hãy <b>Khóa</b> hoặc chuyển giao nhiệm vụ trước.<br>• Sao lưu / khôi phục dữ liệu ở mục Tài khoản &amp; hệ thống.</div></div></div>
+  <div class="card" style="padding:0;margin-top:16px"><div class="scroll-x"><table class="tbl"><thead><tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Chức vụ</th><th>Nhiệm vụ phân công</th><th></th></tr></thead><tbody>
+  ${DB.users.map(u=>`<tr style="${u.active?"":"opacity:.55"}"><td>${person(u)}</td><td><code>${esc(u.username)}</code></td><td>${ROLE[u.role]}</td><td>${esc(u.title)}</td><td style="max-width:360px;font-size:12.5px;color:var(--muted)">${esc((u.mandate||"").slice(0,110))}${(u.mandate||"").length>110?"…":""}</td>
+   <td style="white-space:nowrap"><button class="btn sm" data-act="edituser" data-u="${u.id}">Sửa</button> <button class="btn sm" data-act="resetpw" data-u="${u.id}">Đặt lại MK</button> ${u.id!==S.me.id?`<button class="btn sm" data-act="lockuser" data-u="${u.id}">${u.active?"Khóa":"Mở khóa"}</button> <button class="btn sm danger" data-act="deluser" data-u="${u.id}">Xóa</button>`:""}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
 }
 
 /* ============ ACTIVITY ============ */
@@ -952,12 +983,14 @@ document.addEventListener("click",e=>{
     case"cal":S.calMonth=+d.d===0?today().slice(0,7):(()=>{const [y,m]=S.calMonth.split("-").map(Number);const x=new Date(y,m-1+ +d.d,1);return `${x.getFullYear()}-${pad(x.getMonth()+1)}`})();render();break;
     case"tv":S.teamView=d.v;render();break;
     case"newuser":userForm();break;
+    case"saveset":{const c=DB.settings;c.orgName=$("#ad_org").value.trim()||c.orgName;c.logo=$("#ad_logo").value.trim()||c.logo;c.appName=$("#ad_app").value.trim()||c.appName;c.loginTitle=$("#ad_lt").value.trim();c.loginDesc=$("#ad_ld").value.trim();c.feats=$("#ad_ft").value.split("\n").map(x=>x.trim()).slice(0,6);c.showAccounts=$("#ad_sa").checked;log("Cập nhật nội dung hệ thống");save();renderShell();toast("Đã lưu thay đổi");break}
+    case"deluser":{const u=U(d.u);if(DB.tasks.some(t=>t.assigneeId===u.id||t.createdBy===u.id||t.collab.includes(u.id)))return toast("Người này còn nhiệm vụ liên quan – hãy khóa tài khoản hoặc chuyển giao nhiệm vụ");confirmBox(`Xóa vĩnh viễn <b>${esc(u.name)}</b>?`,()=>{DB.users=DB.users.filter(x=>x.id!==u.id);log(`Xóa nhân sự ${u.name}`);save();render();toast("Đã xóa")},"Xóa");break}
     case"edituser":userForm(d.u);break;
     case"resetpw":confirmBox(`Đặt lại mật khẩu của <b>${esc(U(d.u).name)}</b> về ${DEFAULT_PW}?`,()=>{U(d.u).pass=hash(DEFAULT_PW);log(`Đặt lại mật khẩu ${U(d.u).name}`);save();render();toast("Đã đặt lại mật khẩu")});break;
     case"lockuser":{const u=U(d.u);u.active=!u.active;log(`${u.active?"Mở khóa":"Khóa"} tài khoản ${u.name}`);save();render();break}
     case"perfdetail":perfDetail(d.u);break;
     case"exportcsv":{const rows=[["Mã","Nhiệm vụ","Lĩnh vực","Người thực hiện","Người giao","Bắt đầu","Hạn","Ưu tiên","Trạng thái","Tiến độ %","Đánh giá","Nhận xét"],...filtered().map(t=>[t.code,t.title,t.field,U(t.assigneeId)?.name,U(t.createdBy)?.name,fmt(t.startDate),fmt(t.due),PRIO[t.priority].l,STATUS[eff(t)].l,t.progress,t.rating||"",t.fb])];download(`nhiem-vu-${today()}.csv`,csv(rows),"text/csv");break}
-    case"exportperf":{const ts=DB.tasks.filter(inPeriod);const rows=[["Họ tên","Chức vụ","Số việc giao","Hoàn thành","Quá hạn","% Hoàn thành","% Đúng hạn","Chất lượng TB","Điểm","Xếp loại"],...DB.users.filter(u=>u.active).map(u=>{const p=perf(u.id,ts);return [u.name,u.title,p.total,p.done,p.od,pct(p.completion),pct(p.onTime),p.avg?p.avg.toFixed(1):"",p.score??"",p.rank]})];download(`hieu-suat-${S.period}-${today()}.csv`,csv(rows),"text/csv");break}
+    case"exportperf":{const ts=DB.tasks.filter(inPeriod);const rows=[["Họ tên","Chức vụ","Số việc giao","Hoàn thành","Quá hạn","% Hoàn thành","% Đúng hạn","Chất lượng TB","Điểm","Xếp loại"],...members().map(u=>{const p=perf(u.id,ts);return [u.name,u.title,p.total,p.done,p.od,pct(p.completion),pct(p.onTime),p.avg?p.avg.toFixed(1):"",p.score??"",p.rank]})];download(`hieu-suat-${S.period}-${today()}.csv`,csv(rows),"text/csv");break}
     case"saveprofile":S.me.phone=$("#sp_p").value.trim();S.me.email=$("#sp_e").value.trim();save();toast("Đã lưu thông tin");break;
     case"changepw":{const o=$("#pw0").value,n=$("#pw1").value;if(S.me.pass!==hash(o))return toast("Mật khẩu hiện tại không đúng");if(n.length<6)return toast("Mật khẩu mới tối thiểu 6 ký tự");if(n!==$("#pw2").value)return toast("Nhập lại mật khẩu không khớp");S.me.pass=hash(n);log("Đổi mật khẩu");save();toast("Đã đổi mật khẩu");render();break}
     case"backup":download(`backup-nhiemvu-${today()}.json`,JSON.stringify(DB),"application/json");break;
